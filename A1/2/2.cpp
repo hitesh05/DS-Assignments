@@ -5,36 +5,40 @@ using namespace std;
 
 int get_row_start(int r, int n, int s)
 {
-    if (r == s - 1)
-        return int((s - 1) * (n / s));
-    else
+    if (r != s - 1)
         return int(r * (n / s));
+    else
+        return int((s - 1) * (n / s));
 }
 
 int get_row_end(int r, int n, int s)
 {
-    if (r == s - 1)
-        return n - 1;
+    if (r != s - 1)
+        return int((r + 1) * (n / s) - 1);
     else
-        return int((r + 1) * (n / s) - 1)
+        return n - 1;
 }
 
 void printMatrix(int *mat, int n, int proc)
 {
-    for (int i = 0; i < n; i++)
+    int i = 0;
+    while (i < n)
     {
-        for (int j = 0; j < n; j++)
+        int j = 0;
+        while (j < n)
         {
             cout << mat[i * n + j] << " ";
+            j++;
         }
         cout << endl;
+        i++;
     }
 }
 
 int Owner(int k, int s, int n)
 {
     int tot = s - 1;
-    int iter = n / p;
+    int iter = n / s;
     if (k < tot * iter)
         return k / iter;
     else
@@ -46,8 +50,8 @@ void recv_col(int my_rank, int n, int s, int *mat, int k, MPI_Comm comm, int *fi
     int row_s = get_row_start(my_rank, n, s);
     int row_e = get_row_end(my_rank, n, s);
 
-    int *to_recv = new int[n];
-    int *disp = new int[n];
+    int *to_recv = new int[s];
+    int *disp = new int[s];
     int iter = n / s;
 
     for (int i = 0; i < s; i++)
@@ -69,13 +73,20 @@ void recv_col(int my_rank, int n, int s, int *mat, int k, MPI_Comm comm, int *fi
         x = n - (iter * (s - 1));
 
     int *col_k = new int[x];
+
+    int index = -1;
     for (int i = row_s; i <= row_e; i++)
-        col_k[i - row_s] = mat[i * n + k];
+    {
+        int *src = mat + i * n + k;
+        index = i - row_s;
+        int *dest = col_k + index;
+        std::copy(src, src + 1, dest);
+    }
 
     MPI_Allgatherv(col_k, x, MPI_INT, final_cur_col, to_recv, disp, MPI_INT, comm);
     delete[] to_recv;
     delete[] disp;
-    delete[] col_k
+    delete[] col_k;
 }
 
 void Algo(int my_rank, int n, int *mat, int s, MPI_Comm comm)
@@ -95,23 +106,25 @@ void Algo(int my_rank, int n, int *mat, int s, MPI_Comm comm)
         int *final_cur_col = new int[n];
         recv_col(my_rank, n, s, mat, k, comm, final_cur_col);
 
-        for (int i = row_s; i <= row_e; i++)
+        for (int i = row_s; i < row_e + 1; i++)
         {
-            for (int j = 0; j < n; j++)
+            for (int j = 0; j <= n - 1; j++)
             {
-                mat[i * n + j] = min(mat[i * n + j], final_cur_col[i] + cur_row[j]);
+                int ind_ = i * n + j;
+                int val = min(mat[ind_], final_cur_col[i] + cur_row[j]);
+                mat[ind_] = val;
             }
         }
         k++;
+        delete[] final_cur_col;
     }
-    int mat2 = new int[n * n];
-    MPI_Reduce(mat, mat2, n * n, MPI_INT, MPI_MIN, 0, comm);
+    int size_ = n * n;
+    int mat2[size_];
+    MPI_Reduce(mat, mat2, size_, MPI_INT, MPI_MIN, 0, comm);
     if (!my_rank)
         printMatrix(mat2, n, my_rank);
 
     delete[] cur_row;
-    delete[] final_cur_col;
-    delete[] mat2;
 }
 
 int main(int argc, char **argv)
@@ -127,17 +140,18 @@ int main(int argc, char **argv)
     int N;
     if (rank == 0)
     {
-        cout << "enter N: "
-             << " ";
+        // cout << "enter N: "
+        //      << " ";
         cin >> N;
     }
+    MPI_Bcast(&N, 1, MPI_INT, 0, comm);
 
-    int mat_size = n * n;
+    int mat_size = N * N;
     int *matrix = new int[mat_size];
-    if (!rank)
+    if (rank == 0)
     {
-        cout << "matrix: "
-             << "\n";
+        // cout << "matrix: "
+        //      << "\n";
         for (int i = 0; i < N; i++)
         {
             for (int j = 0; j < N; j++)
@@ -152,12 +166,11 @@ int main(int argc, char **argv)
             }
         }
     }
-    MPI_Bcast(&N, 1, MPI_INT, 0, comm);
     MPI_Bcast(matrix, mat_size, MPI_INT, 0, comm);
 
-    Algo(rank, n, matrix, size, comm);
-    MPI_Finalize();
+    Algo(rank, N, matrix, size, comm);
     delete[] matrix;
 
+    MPI_Finalize();
     return 0;
 }

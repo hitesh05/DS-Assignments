@@ -8,5 +8,5 @@ fi
 filename="$1"
 num_processes="$2"
 
-mpicxx "$filename"
-mpirun -np "$num_processes" ./a.out
+mpic++.openmpi "$filename"
+time mpirun.openmpi -np "$num_processes" --use-hwthread-cpus --oversubscribe ./a.out < test

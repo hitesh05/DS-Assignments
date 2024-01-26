@@ -41,7 +41,7 @@ int main(int argc, char **argv){
 
     int N;
     if(rank == 0){
-        cout << "enter n: " << " ";
+        // cout << "enter n: " << " ";
         cin >> N;
     }
     MPI_Bcast(&N,1,MPI_INT,0,comm);
@@ -62,7 +62,7 @@ int main(int argc, char **argv){
 
     if (rank == 0)
     {
-        cout << "Answer: " << total_count << endl;
+        cout << total_count << endl;
     }
 
     MPI_Finalize();
