@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+import sys
+import time
+
+current = None
+current_set = set()
+
+for line in sys.stdin:
+    n1, n2 = map(int, line.strip().split('\t'))
+    if current != n1:
+        if current is not None:
+            for ind, i in enumerate(current_set):
+                for ind_, j in enumerate(current_set):
+                    if i < j:
+                        print(f"{i} {j}\t{current}")
+        current_set = set()
+        current_set.add(n2)
+        current = n1
+    else:
+        current_set.add(n2)
+        
+if current == n1:
+	for ind, i in enumerate(current_set):
+		for ind_, j in enumerate(current_set):
+			if i < j:
+				print(f"{i} {j}\t{current}")

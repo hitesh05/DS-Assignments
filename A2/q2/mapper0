@@ -1,0 +1,9 @@
+#!/usr/bin/env python3
+import sys
+import time
+
+
+for line in sys.stdin:
+  line = line.strip()
+  n1, n2 = line.split(' ')
+  print(f"{n1}\t{n2}\n{n2}\t{n1}")

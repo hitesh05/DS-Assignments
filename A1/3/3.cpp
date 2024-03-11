@@ -81,7 +81,7 @@ void send_bottom_row_to_nxt_proc(int my_rank, int n, int s, int m, int *mat, int
 void send_top_row_to_prev_proc(int my_rank, int n, int s, int m, int *mat, int row_s, int row_e, MPI_Comm comm)
 {
     if (my_rank != s - 1){
-        int ind = (row_e + 1) * m
+        int ind = (row_e + 1) * m;
         MPI_Recv(mat + ind, m, MPI_INT, my_rank + 1, 0, comm, MPI_STATUS_IGNORE);
     }
     if (my_rank)

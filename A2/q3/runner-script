@@ -1,0 +1,44 @@
+#!/usr/bin/bash
+STREAM_JAR=$1
+LOCAL_INP=$2
+HDFS_INP=$3
+HDFS_OUT=$4
+
+# echo "STREAM_JAR: $STREAM_JAR"
+# echo "LOCAL_INP: $LOCAL_INP"
+# echo "HDFS_INP: $HDFS_INP"
+# echo "HDFS_OUT: $HDFS_OUT"
+
+# hdfs dfs -test -d ${HDFS_INP}
+# if [ $? -ne 0 ]; then
+#     hdfs dfs -mkdir -p ${HDFS_INP}
+# fi
+
+
+make clean
+make
+hdfs dfs -rm -r -f ${HDFS_INP}
+hdfs dfs -rm -r -f ${HDFS_OUT}
+hdfs dfs -mkdir -p ${HDFS_INP}
+
+# put files on hdfs
+hdfs dfs -put ${LOCAL_INP} ${HDFS_INP}
+
+hadoop jar $STREAM_JAR -D mapred.reduce.tasks=3 -input ${HDFS_INP}/* -output ${HDFS_OUT} -mapper "mapper0" -file mapper0 -reducer "reducer0" -file reducer0
+
+
+for (( i=0; i<11; i++ ))
+do
+  echo $i
+  hdfs dfs -rm -r -f ${HDFS_INP}/*
+  hdfs dfs -cp ${HDFS_OUT}/part* ${HDFS_INP}
+  # hdfs dfs -cat ${HDFS_INP}/*
+  hdfs dfs -rm -r -f ${HDFS_OUT}
+  hadoop jar $STREAM_JAR -D mapreduce.job.reduces=3 -input ${HDFS_INP}/* -output ${HDFS_OUT} -mapper "mapper1" -file mapper1 -reducer "reducer1" -file reducer1
+done
+
+hdfs dfs -rm -r -f ${HDFS_INP}/*
+hdfs dfs -cp ${HDFS_OUT}/part* ${HDFS_INP}
+# hdfs dfs -cat ${HDFS_INP}/*
+hdfs dfs -rm -r -f ${HDFS_OUT}
+hadoop jar $STREAM_JAR -D mapreduce.job.reduces=3 -input ${HDFS_INP}/* -output ${HDFS_OUT} -mapper "mapper2" -file mapper2 -reducer "reducer2" -file reducer2

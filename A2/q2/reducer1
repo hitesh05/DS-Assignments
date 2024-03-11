@@ -1,0 +1,26 @@
+#!/usr/bin/env python3
+import sys
+import time
+
+current = None
+current_set = set()
+
+def sort_set(s):
+    s = sorted(s, key=lambda x: int(x))
+    return ' '.join(s)
+
+for line in sys.stdin:
+    n1, n2 = line.strip().split('\t')
+    if current != n1:
+        if current is not None:
+            current_set = sort_set(current_set)
+            print(f"{current}\t{current_set}")
+        current_set = set()
+        current_set.add(n2)
+        current = n1
+    else:
+        current_set.add(n2)
+
+if current == n1:
+    current_set = sort_set(current_set)
+    print(f"{current}\t{current_set}")
